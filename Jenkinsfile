@@ -1,10 +1,13 @@
 pipeline {
     agent any
-    
+
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-sksri')
         AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
+        ENV_NAME              = env.GIT_BRANCH == 'feature/dev' ? 'dev' :
+                                env.GIT_BRANCH == 'feature/stage' ? 'stage' :
+                                env.GIT_BRANCH == 'feature/prod' ? 'prod' : 'dev'
     }
 
     stages {
@@ -12,12 +15,11 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    BRANCH_NAME = env.GIT_BRANCH
-                    echo "Building on branch: ${BRANCH_NAME}"
+                    echo "Deploying to environment: ${ENV_NAME}"
                 }
             }
         }
-        
+
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
@@ -25,28 +27,16 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh 'terraform plan -out=tfplan'
+                    sh "terraform plan -var-file=${ENV_NAME}.tfvars -out=tfplan"
                 }
             }
         }
-        
-        stage('Approval') {
-            when {
-                branch 'master'  // Approval step only for master
-            }
-            steps {
-                input message: 'Do you want to apply this plan?'
-            }
-        }
-        
+
         stage('Terraform Apply') {
-            when {
-                branch 'master'  // Apply step only runs on master
-            }
             steps {
                 dir('terraform') {
                     sh 'terraform apply -auto-approve tfplan'
