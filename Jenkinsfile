@@ -35,7 +35,7 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh '''terraform plan -var="env=$DEPLOY_ENV" -var="bucket_name_prefix=terraform-demo" -out=tfplan'''
+                    sh '''terraform plan -var="env=$DEPLOY_ENV" -var="bucket_name_prefix=sridhar-terraform-demo-2025" -out=tfplan'''
                 }
             }
         }
