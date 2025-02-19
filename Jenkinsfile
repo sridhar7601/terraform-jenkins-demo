@@ -2,10 +2,9 @@ pipeline {
     agent any
     
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_ACCESS_KEY_ID     = credentials('aws-sksri')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
-        BRANCH_NAME          = "${env.BRANCH_NAME}"
     }
     
     stages {
@@ -32,18 +31,12 @@ pipeline {
         }
         
         stage('Approval') {
-            when {
-                expression { BRANCH_NAME == 'main' || BRANCH_NAME == 'master' }
-            }
             steps {
                 input message: 'Do you want to apply this plan?'
             }
         }
         
         stage('Terraform Apply') {
-            when {
-                expression { BRANCH_NAME == 'main' || BRANCH_NAME == 'master' }
-            }
             steps {
                 dir('terraform') {
                     sh 'terraform apply -auto-approve tfplan'
