@@ -2,52 +2,72 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-sksri')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
-        TF_IN_AUTOMATION      = '1'
-        ENV_NAME              = env.GIT_BRANCH == 'feature/dev' ? 'dev' :
-                                env.GIT_BRANCH == 'feature/stage' ? 'stage' :
-                                env.GIT_BRANCH == 'feature/prod' ? 'prod' : 'dev'
+        GIT_BRANCH = "${env.GIT_BRANCH}"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    // Determine the deployment environment based on the branch
+                    env.DEPLOY_ENV = (env.GIT_BRANCH == 'feature/dev') ? 'dev' :
+                                     (env.GIT_BRANCH == 'feature/stage') ? 'stage' :
+                                     (env.GIT_BRANCH == 'feature/prod') ? 'prod' : 'test'
+
+                    echo "Deploying to environment: ${env.DEPLOY_ENV}"
+                }
+            }
+        }
+
+        stage('Checkout Code') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
                 script {
-                    echo "Deploying to environment: ${ENV_NAME}"
+                    echo "Building the project..."
+                    sh 'npm install'
+                    sh 'npm run build'
                 }
             }
         }
 
-        stage('Terraform Init') {
+        stage('Run Tests') {
             steps {
-                dir('terraform') {
-                    sh 'terraform init'
+                script {
+                    echo "Running tests..."
+                    sh 'npm test'
                 }
             }
         }
 
-        stage('Terraform Plan') {
+        stage('Deploy') {
             steps {
-                dir('terraform') {
-                    sh "terraform plan -var-file=${ENV_NAME}.tfvars -out=tfplan"
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir('terraform') {
-                    sh 'terraform apply -auto-approve tfplan'
+                script {
+                    echo "Deploying application to ${env.DEPLOY_ENV} environment..."
+                    if (env.DEPLOY_ENV == 'dev') {
+                        sh './deploy.sh dev'
+                    } else if (env.DEPLOY_ENV == 'stage') {
+                        sh './deploy.sh stage'
+                    } else if (env.DEPLOY_ENV == 'prod') {
+                        sh './deploy.sh prod'
+                    } else {
+                        echo "Unknown environment, skipping deployment."
+                    }
                 }
             }
         }
     }
 
     post {
-        always {
-            cleanWs()
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }
