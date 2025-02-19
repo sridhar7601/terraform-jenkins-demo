@@ -9,7 +9,6 @@ pipeline {
         stage('Setup Environment') {
             steps {
                 script {
-                    // Determine the deployment environment based on the branch
                     env.DEPLOY_ENV = (env.GIT_BRANCH == 'feature/dev') ? 'dev' :
                                      (env.GIT_BRANCH == 'feature/stage') ? 'stage' :
                                      (env.GIT_BRANCH == 'feature/prod') ? 'prod' : 'test'
@@ -25,38 +24,35 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Terraform Init') {
             steps {
-                script {
-                    echo "Building the project..."
-                    sh 'npm install'
-                    sh 'npm run build'
+                dir('terraform') {
+                    sh 'terraform init'
                 }
             }
         }
 
-        stage('Run Tests') {
+        stage('Terraform Plan') {
             steps {
-                script {
-                    echo "Running tests..."
-                    sh 'npm test'
+                dir('terraform') {
+                    sh 'terraform plan -out=tfplan'
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Approval') {
+            when {
+                branch 'feature/prod'  // Approval only for production
+            }
             steps {
-                script {
-                    echo "Deploying application to ${env.DEPLOY_ENV} environment..."
-                    if (env.DEPLOY_ENV == 'dev') {
-                        sh './deploy.sh dev'
-                    } else if (env.DEPLOY_ENV == 'stage') {
-                        sh './deploy.sh stage'
-                    } else if (env.DEPLOY_ENV == 'prod') {
-                        sh './deploy.sh prod'
-                    } else {
-                        echo "Unknown environment, skipping deployment."
-                    }
+                input message: 'Do you want to apply this plan?'
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
