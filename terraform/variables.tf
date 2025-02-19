@@ -1,9 +1,10 @@
+# terraform/outputs.tf
 variable "env" {
-  description = "The environment to deploy to (dev, stage, prod)"
+  description = "Deployment environment"
   type        = string
 }
 
 variable "bucket_name_prefix" {
-  default     = "myapp-bucket"
-  description = "Prefix for S3 bucket name"
+  description = "S3 bucket name prefix"
+  type        = string
 }
