@@ -2,21 +2,25 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-sksri')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
-        TF_IN_AUTOMATION      = '1'
-        ENV_NAME              = env.GIT_BRANCH == 'feature/dev' ? 'dev' :
-                                env.GIT_BRANCH == 'feature/stage' ? 'stage' :
-                                env.GIT_BRANCH == 'feature/prod' ? 'prod' : 'dev'
+        GIT_BRANCH = "${env.GIT_BRANCH}"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    env.DEPLOY_ENV = (env.GIT_BRANCH == 'feature/dev') ? 'dev' :
+                                     (env.GIT_BRANCH == 'feature/stage') ? 'stage' :
+                                     (env.GIT_BRANCH == 'feature/prod') ? 'prod' : 'test'
+
+                    echo "Deploying to environment: ${env.DEPLOY_ENV}"
+                }
+            }
+        }
+
+        stage('Checkout Code') {
             steps {
                 checkout scm
-                script {
-                    echo "Deploying to environment: ${ENV_NAME}"
-                }
             }
         }
 
@@ -31,8 +35,17 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh "terraform plan -var-file=${ENV_NAME}.tfvars -out=tfplan"
+                    sh 'terraform plan -out=tfplan'
                 }
+            }
+        }
+
+        stage('Approval') {
+            when {
+                branch 'feature/prod'  // Approval only for production
+            }
+            steps {
+                input message: 'Do you want to apply this plan?'
             }
         }
 
@@ -46,8 +59,11 @@ pipeline {
     }
 
     post {
-        always {
-            cleanWs()
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }
