@@ -14,7 +14,7 @@ variable "bucket_name_prefix" {
 }
 
 resource "aws_s3_bucket" "demo_bucket" {
-  bucket = "${var.bucket_name_prefix}-${var.env}-test"
+  bucket = "${var.bucket_name_prefix}-${var.env}"
   
   tags = {
     Name        = "S3-${var.env}"
