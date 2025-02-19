@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "demo_bucket" {
-  bucket = "jenkins-terraform-sksri-${var.environment}"
+  bucket = "jenkins-terraform-sru-${var.environment}"
   force_destroy = true
 }
 
