@@ -6,11 +6,15 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
+                script {
+                    BRANCH_NAME = env.GIT_BRANCH
+                    echo "Building on branch: ${BRANCH_NAME}"
+                }
             }
         }
         
@@ -31,12 +35,18 @@ pipeline {
         }
         
         stage('Approval') {
+            when {
+                branch 'master'  // Approval step only for master
+            }
             steps {
                 input message: 'Do you want to apply this plan?'
             }
         }
         
         stage('Terraform Apply') {
+            when {
+                branch 'master'  // Apply step only runs on master
+            }
             steps {
                 dir('terraform') {
                     sh 'terraform apply -auto-approve tfplan'
@@ -44,7 +54,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             cleanWs()
