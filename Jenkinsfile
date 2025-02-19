@@ -32,10 +32,10 @@ pipeline {
             }
         }
 
-       stage('Terraform Plan') {
+        stage('Terraform Plan') {
             steps {
                 dir('terraform') {
-                    sh 'terraform plan -var-file="${env.DEPLOY_ENV}.tfvars" -out=tfplan'
+                    sh 'terraform plan -var="env=${env.DEPLOY_ENV}" -var="bucket_name_prefix=terraform-demo" -out=tfplan'
                 }
             }
         }
