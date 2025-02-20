@@ -25,14 +25,7 @@ pipeline {
                 stage('Init Stage') {
                     steps {
                         dir('terraform') {
-                            // Initialize with stage-specific backend config
-                            sh """
-                            terraform init \
-                              -backend-config="bucket=terraform-state-storage-bucket" \
-                              -backend-config="key=terraform/stage/terraform.tfstate" \
-                              -backend-config="region=ap-south-1" \
-                              -backend-config="encrypt=true"
-                            """
+                            sh 'terraform init'
                         }
                     }
                 }
@@ -66,14 +59,7 @@ pipeline {
                 stage('Init Prod') {
                     steps {
                         dir('terraform') {
-                            // Re-initialize with prod-specific backend config
-                            sh """
-                            terraform init -reconfigure \
-                              -backend-config="bucket=terraform-state-storage-bucket" \
-                              -backend-config="key=terraform/prod/terraform.tfstate" \
-                              -backend-config="region=us-east-1" \
-                              -backend-config="encrypt=true" 
-                            """
+                            sh 'terraform init'
                         }
                     }
                 }
