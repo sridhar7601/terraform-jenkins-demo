@@ -26,11 +26,12 @@ pipeline {
                     steps {
                         dir('terraform') {
                             // Initialize with stage-specific backend config
+                            // Changed region to ap-south-1 to match your AWS credentials
                             sh """
                             terraform init \
                               -backend-config="bucket=terraform-state-storage-bucket" \
                               -backend-config="key=terraform/stage/terraform.tfstate" \
-                              -backend-config="region=us-east-1" \
+                              -backend-config="region=ap-south-1" \
                               -backend-config="encrypt=true"
                             """
                         }
@@ -67,11 +68,12 @@ pipeline {
                     steps {
                         dir('terraform') {
                             // Re-initialize with prod-specific backend config
+                            // Changed region to ap-south-1 to match your AWS credentials
                             sh """
                             terraform init -reconfigure \
                               -backend-config="bucket=terraform-state-storage-bucket" \
                               -backend-config="key=terraform/prod/terraform.tfstate" \
-                              -backend-config="region=us-east-1" \
+                              -backend-config="region=ap-south-1" \
                               -backend-config="encrypt=true" 
                             """
                         }
