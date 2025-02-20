@@ -1,14 +1,18 @@
 pipeline {
     agent any
-    
+
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-sksri')
         AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')  // Check Git every 5 minutes for changes
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 checkout scm
                 script {
@@ -26,30 +30,39 @@ pipeline {
             }
         }
         
-        stage('Terraform Plan') {
+        stage('Terraform Plan for Stage & Prod') {
             steps {
                 dir('terraform') {
-                    sh 'terraform plan -out=tfplan'
+                    sh 'terraform plan -var="env=stage" -out=tfplan-stage'
+                    sh 'terraform plan -var="env=prod" -out=tfplan-prod'
                 }
             }
         }
         
-        stage('Approval') {
-            when {
-                branch 'master'  // Approval step only for master
-            }
+        stage('Approval for Stage Deployment') {
             steps {
-                input message: 'Do you want to apply this plan?'
+                input message: 'Do you want to apply this plan to STAGE?'
             }
         }
         
-        stage('Terraform Apply') {
-            when {
-                branch 'master'  // Apply step only runs on master
-            }
+        stage('Deploy to Stage') {
             steps {
                 dir('terraform') {
-                    sh 'terraform apply -auto-approve tfplan'
+                    sh 'terraform apply -auto-approve tfplan-stage'
+                }
+            }
+        }
+
+        stage('Approval for Prod Deployment') {
+            steps {
+                input message: 'Do you want to apply this plan to PROD?'
+            }
+        }
+        
+        stage('Deploy to Prod') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve tfplan-prod'
                 }
             }
         }
