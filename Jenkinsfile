@@ -30,7 +30,7 @@ pipeline {
                             terraform init \
                               -backend-config="bucket=terraform-state-storage-bucket" \
                               -backend-config="key=terraform/stage/terraform.tfstate" \
-                              -backend-config="region=us-east-1" \
+                              -backend-config="region=ap-south-1" \
                               -backend-config="encrypt=true"
                             """
                         }
