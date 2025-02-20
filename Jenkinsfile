@@ -18,7 +18,11 @@ pipeline {
                 }
             }
         }
-        
+        stage('Verify AWS Credentials') {
+           steps {
+                 sh 'aws sts get-caller-identity'
+            }
+        }
         stage('Terraform Setup') {
             steps {
                 dir('terraform') {
