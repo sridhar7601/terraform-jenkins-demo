@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "demo_bucket" {
-  bucket = "jenkins-main-${var.env}"
+  bucket = "jenkins-terraform-main-${var.env}"
   force_destroy = true
 }
 
