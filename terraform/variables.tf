@@ -1,4 +1,5 @@
-# terraform/outputs.tf
-output "bucket_name" {
-  value = aws_s3_bucket.demo_bucket.id
+variable "env" {
+  description = "Deployment environment (e.g., dev, stage, prod)"
+  type        = string
+  default     = "dev"
 }
