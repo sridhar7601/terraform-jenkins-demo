@@ -5,9 +5,6 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
     }
-    triggers {
-        pollSCM('H/5 * * * *')
-    }
     stages {
         stage('Checkout Code') {
             steps {
@@ -19,8 +16,8 @@ pipeline {
             }
         }
         stage('Verify AWS Credentials') {
-           steps {
-                 sh 'aws sts get-caller-identity'
+            steps {
+                sh 'aws sts get-caller-identity'
             }
         }
         stage('Terraform Setup') {
