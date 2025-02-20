@@ -5,8 +5,11 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-sksri')
         TF_IN_AUTOMATION      = '1'
     }
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['stage', 'prod'], description: 'Select deployment environment')
+    }
     triggers {
-        pollSCM('H/5 * * * *')  // Fixed syntax error in polling schedule
+        pollSCM('H/5 * * * *')
     }
     stages {
         stage('Checkout Code') {
@@ -22,61 +25,38 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 dir('terraform') {
-                    sh 'terraform init'
-                }
-            }
-        }
-        
-        // Separate deployment workflows for stage and prod
-        stage('Deploy to Stage') {
-            stages {
-                stage('Plan Stage') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform plan -var="env=stage" -out=tfplan-stage'
-                        }
-                    }
-                }
-                
-                stage('Approval for Stage') {
-                    steps {
-                        input message: 'Do you want to apply this plan to STAGE?'
-                    }
-                }
-                
-                stage('Apply to Stage') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform apply -auto-approve tfplan-stage'
-                        }
+                    // Initialize with backend configuration
+                    script {
+                        sh """
+                        terraform init \
+                          -backend-config="bucket=terraform-state-storage-bucket" \
+                          -backend-config="key=terraform/${params.ENVIRONMENT}/terraform.tfstate" \
+                          -backend-config="region=us-east-1" \
+                          -backend-config="encrypt=true"
+                        """
                     }
                 }
             }
         }
         
-        stage('Deploy to Prod') {
-            stages {
-                stage('Plan Prod') {
-                    steps {
-                        dir('terraform') {
-                            // Create a fresh plan for prod AFTER stage deployment is complete
-                            sh 'terraform plan -var="env=prod" -out=tfplan-prod'
-                        }
-                    }
+        stage('Terraform Plan') {
+            steps {
+                dir('terraform') {
+                    sh "terraform plan -var=\"env=${params.ENVIRONMENT}\" -out=tfplan"
                 }
-                
-                stage('Approval for Prod') {
-                    steps {
-                        input message: 'Do you want to apply this plan to PROD?'
-                    }
-                }
-                
-                stage('Apply to Prod') {
-                    steps {
-                        dir('terraform') {
-                            sh 'terraform apply -auto-approve tfplan-prod'
-                        }
-                    }
+            }
+        }
+        
+        stage('Approval for Deployment') {
+            steps {
+                input message: "Do you want to apply this plan to ${params.ENVIRONMENT}?"
+            }
+        }
+        
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh "terraform apply -auto-approve tfplan"
                 }
             }
         }
