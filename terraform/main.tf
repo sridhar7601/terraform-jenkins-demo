@@ -1,6 +1,6 @@
 # Main Terraform file
 provider "aws" {
-  region = "us-east-1"
+  region = "us-west-2"
 }
 
 resource "aws_s3_bucket" "demo_bucket" {
